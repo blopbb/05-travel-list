@@ -1,17 +1,33 @@
 import { useState } from "react";
 
-const initialItems = [
-  { id: 1, description: "Passports", quantity: 2, packed: false },
-  { id: 2, description: "Socks", quantity: 12, packed: false },
-];
-
 export default function App() {
+  const [items, setItems] = useState([]);
+
+  function handleAdd(item) {
+    setItems((items) => [...items, item]);
+  }
+
+  function handleDelete(id) {
+    setItems((items) => items.filter((item) => item.id !== id));
+  }
+
+  function handleTogglePacked(id) {
+    setItems((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, packed: !item.packed } : item
+      )
+    );
+  }
   return (
     <>
       <Logo />
-      <Form />
-      <PackingList />
-      <Stats />
+      <Form onAdd={handleAdd} />
+      <PackingList
+        items={items}
+        onDelete={handleDelete}
+        onToggleItem={handleTogglePacked}
+      />
+      <Stats items={items} />
     </>
   );
 }
@@ -20,14 +36,14 @@ function Logo() {
   return <h1>To-do List</h1>;
 }
 
-function Form() {
+function Form({ onAdd }) {
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState(1);
   function handleSubmission(e) {
     e.preventDefault();
     if (!description) return;
     const newItem = { description, quantity, packed: false, id: Date.now() };
-
+    onAdd(newItem);
     setDescription("");
     setQuantity(1);
   }
@@ -55,33 +71,52 @@ function Form() {
   );
 }
 
-function Item({ item }) {
+function Item({ item, onDelete, onToggleItem }) {
   return (
     <li>
+      <input
+        type="checkbox"
+        value={item.packed}
+        onChange={() => onToggleItem(item.id)}
+      />
       <span style={item.packed ? { textDecoration: "line-through" } : {}}>
         {item.quantity} {item.description}
       </span>
-      <button>❌</button>
+      <button onClick={() => onDelete(item.id)}>❌</button>
     </li>
   );
 }
 
-function PackingList() {
+function PackingList({ items, onDelete, onToggleItem }) {
   return (
     <div>
       <ul className="list">
-        {initialItems.map((item) => (
-          <Item item={item} key={item.id}></Item>
+        {items.map((item) => (
+          <Item
+            item={item}
+            key={item.id}
+            onDelete={onDelete}
+            onToggleItem={onToggleItem}
+          ></Item>
         ))}
       </ul>
     </div>
   );
 }
 
-function Stats() {
+function Stats({ items }) {
+  const numItems = items.length;
+  const numDone = items.filter((item) => item.packed).length;
   return (
     <footer className="stats">
-      You have X tasks, and have completed Y of them.
+      You have {numItems} task(s), and have completed {numDone} of them. (
+      {numItems === 0
+        ? "100%"
+        : Number(numDone / numItems).toLocaleString(undefined, {
+            style: "percent",
+            minimumFractionDigits: 2,
+          })}
+      )
     </footer>
   );
 }
